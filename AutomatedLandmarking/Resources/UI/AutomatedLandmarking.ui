@@ -6,11 +6,62 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>325</width>
-    <height>380</height>
+    <width>415</width>
+    <height>393</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QGroupBox" name="sharedModelGroupBox">
+     <property name="title">
+      <string>Prediction model</string>
+     </property>
+     <layout class="QVBoxLayout" name="sharedModelLayout">
+      <item>
+       <widget class="QComboBox" name="modelSelector">
+        <property name="toolTip">
+         <string>Select the landmark model used by both Single and Batch prediction.</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="modelStatusLabel">
+        <property name="text">
+         <string>Checking selected model...</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="sharedModelActionsLayout">
+        <item>
+         <widget class="QPushButton" name="downloadSelectedModelButton">
+          <property name="text">
+           <string>Download Model</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="refreshModelStatusButton">
+          <property name="text">
+           <string>Refresh Status</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="removeCachedModelButton">
+          <property name="text">
+           <string>Remove Cached Model</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
    <item>
     <widget class="QTabWidget" name="mainTabWidget">
      <property name="currentIndex">
@@ -18,26 +69,9 @@
      </property>
      <widget class="QWidget" name="singleTab">
       <attribute name="title">
-       <string>Single</string>
+       <string>Single mesh</string>
       </attribute>
       <layout class="QVBoxLayout" name="singleTabLayout">
-       <item>
-        <widget class="QLabel" name="modelSelectorLabel">
-         <property name="text">
-          <string>Model:</string>
-         </property>
-         <property name="toolTip">
-          <string>BioFace3D landmark model. 21Landmarks_25views is the default for facial meshes.</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QComboBox" name="modelSelector">
-         <property name="toolTip">
-          <string>Select the landmark model. More landmarks = more detail but slower.</string>
-         </property>
-        </widget>
-       </item>
        <item>
         <widget class="QLabel" name="inputModelLabel">
          <property name="text">
@@ -96,24 +130,24 @@
          <layout class="QVBoxLayout" name="applyToLayout">
           <item>
            <widget class="QRadioButton" name="thisMeshOnlyRadio">
+            <property name="toolTip">
+             <string>Generate landmarks for the selected input mesh only.</string>
+            </property>
             <property name="text">
              <string>This mesh only</string>
             </property>
             <property name="checked">
              <bool>true</bool>
             </property>
-            <property name="toolTip">
-             <string>Generate landmarks for the selected input mesh only.</string>
-            </property>
            </widget>
           </item>
           <item>
            <widget class="QRadioButton" name="allMeshesRadio">
-            <property name="text">
-             <string>All meshes in scene (same coordinate system)</string>
-            </property>
             <property name="toolTip">
              <string>Generate landmarks for all meshes in the scene. One output fiducial per mesh.</string>
+            </property>
+            <property name="text">
+             <string>All meshes in scene (same coordinate system)</string>
             </property>
            </widget>
           </item>
@@ -175,51 +209,51 @@
       <layout class="QVBoxLayout" name="batchTabLayout">
        <item>
         <widget class="QLabel" name="batchInputDirLabel">
-         <property name="text">
-          <string>Input directory:</string>
-         </property>
          <property name="toolTip">
           <string>Folder containing mesh files (.ply, .obj, .stl, .vtk, .wrl)</string>
+         </property>
+         <property name="text">
+          <string>Input directory:</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="ctkPathLineEdit" name="batchInputDirEdit">
-         <property name="filters">
-          <string>Directory</string>
-         </property>
          <property name="toolTip">
           <string>Select folder with mesh files to process</string>
+         </property>
+         <property name="filters">
+          <set>ctkPathLineEdit::AllEntries|ctkPathLineEdit::Dirs|ctkPathLineEdit::Drives|ctkPathLineEdit::Executable|ctkPathLineEdit::Files|ctkPathLineEdit::NoDot|ctkPathLineEdit::NoDotDot|ctkPathLineEdit::Readable</set>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QLabel" name="batchOutputDirLabel">
-         <property name="text">
-          <string>Output directory:</string>
-         </property>
          <property name="toolTip">
           <string>Folder where landmark files will be saved</string>
+         </property>
+         <property name="text">
+          <string>Output directory:</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="ctkPathLineEdit" name="batchOutputDirEdit">
-         <property name="filters">
-          <string>Directory</string>
-         </property>
          <property name="toolTip">
           <string>Select folder for output landmark files</string>
+         </property>
+         <property name="filters">
+          <set>ctkPathLineEdit::AllEntries|ctkPathLineEdit::Dirs|ctkPathLineEdit::Drives|ctkPathLineEdit::Executable|ctkPathLineEdit::Files|ctkPathLineEdit::NoDot|ctkPathLineEdit::NoDotDot|ctkPathLineEdit::Readable</set>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QLabel" name="batchOutputFormatLabel">
-         <property name="text">
-          <string>Output format:</string>
-         </property>
          <property name="toolTip">
           <string>File format for saved landmarks</string>
+         </property>
+         <property name="text">
+          <string>Output format:</string>
          </property>
         </widget>
        </item>
@@ -271,11 +305,11 @@
        </item>
        <item>
         <widget class="QPushButton" name="runBatchButton">
-         <property name="text">
-          <string>Run batch</string>
-         </property>
          <property name="toolTip">
           <string>Process all mesh files in input directory and save landmarks to output directory</string>
+         </property>
+         <property name="text">
+          <string>Run batch</string>
          </property>
         </widget>
        </item>
@@ -306,7 +340,7 @@
      </widget>
      <widget class="QWidget" name="advancedTab">
       <attribute name="title">
-       <string>Advanced</string>
+       <string>Advanced settings</string>
       </attribute>
       <layout class="QVBoxLayout" name="advancedTabLayout">
        <item>
@@ -327,11 +361,11 @@
           </item>
           <item>
            <widget class="QPushButton" name="installGpuTorchButton">
-            <property name="text">
-             <string>Install GPU-enabled PyTorch...</string>
-            </property>
             <property name="toolTip">
              <string>Reinstall PyTorch from the official CUDA wheel index (large download). Requires a recent NVIDIA GPU driver. Restart 3D Slicer after installation.</string>
+            </property>
+            <property name="text">
+             <string>Install GPU-enabled PyTorch...</string>
             </property>
            </widget>
           </item>
@@ -342,11 +376,11 @@
         <layout class="QFormLayout" name="advancedFormLayout">
          <item row="0" column="0">
           <widget class="QLabel" name="maxRansacLabel">
-           <property name="text">
-            <string>Max Ransac Error:</string>
-           </property>
            <property name="toolTip">
             <string>Prediction rejected if ransac_error &gt;= this. Lower = stricter. Default 5.</string>
+           </property>
+           <property name="text">
+            <string>Max Ransac Error:</string>
            </property>
           </widget>
          </item>
@@ -356,26 +390,26 @@
             <number>1</number>
            </property>
            <property name="minimum">
-            <double>0.5</double>
+            <double>0.500000000000000</double>
            </property>
            <property name="maximum">
-            <double>50.0</double>
+            <double>50.000000000000000</double>
            </property>
            <property name="singleStep">
-            <double>0.5</double>
+            <double>0.500000000000000</double>
            </property>
            <property name="value">
-            <double>5.0</double>
+            <double>5.000000000000000</double>
            </property>
           </widget>
          </item>
          <item row="1" column="0">
           <widget class="QLabel" name="meanPredictionsLabel">
-           <property name="text">
-            <string>Mean Predictions:</string>
-           </property>
            <property name="toolTip">
             <string>Number of runs to average. More = stabler but slower. Default 1.</string>
+           </property>
+           <property name="text">
+            <string>Mean Predictions:</string>
            </property>
           </widget>
          </item>
@@ -394,11 +428,11 @@
          </item>
          <item row="2" column="0">
           <widget class="QLabel" name="maxTriesLabel">
-           <property name="text">
-            <string>Max Tries:</string>
-           </property>
            <property name="toolTip">
             <string>Retries per run when ransac exceeds threshold. Default 3.</string>
+           </property>
+           <property name="text">
+            <string>Max Tries:</string>
            </property>
           </widget>
          </item>
@@ -438,6 +472,11 @@
  </widget>
  <customwidgets>
   <customwidget>
+   <class>ctkPathLineEdit</class>
+   <extends>QWidget</extends>
+   <header>ctkPathLineEdit.h</header>
+  </customwidget>
+  <customwidget>
    <class>qMRMLNodeComboBox</class>
    <extends>QWidget</extends>
    <header>qMRMLNodeComboBox.h</header>
@@ -447,11 +486,6 @@
    <extends>QWidget</extends>
    <header>qMRMLWidget.h</header>
    <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>ctkPathLineEdit</class>
-   <extends>QWidget</extends>
-   <header>ctkPathLineEdit.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

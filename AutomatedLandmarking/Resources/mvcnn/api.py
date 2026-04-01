@@ -1,8 +1,8 @@
 """
 BioFace3D Module 2 – Public Python API for direct integration (e.g. 3D Slicer).
 
-This module exposes a single function-based API. No CLI, subprocess, or file-based
-flow is required. Import and call from Python only.
+This module exposes a small Python API for model management and landmark prediction.
+No CLI, subprocess, or file-based flow is required. Import and call from Python only.
 
 Example:
     from mvcnn.api import predict_landmarks
@@ -16,10 +16,11 @@ Example:
 from pathlib import Path
 import logging
 import shutil
+import subprocess
 import sys
 import tempfile
 import json
-import urllib.request
+import zipfile
 
 import numpy as np
 
@@ -30,13 +31,178 @@ if str(_MVCNN_DIR) not in sys.path:
     sys.path.insert(0, str(_MVCNN_DIR))
 
 _MODEL_CACHE_DIR = Path.home() / ".bioface3d_mvcnn" / "models"
+_CONFIGS_DIR = _MVCNN_DIR / "__configs"
+_MODEL_METADATA = {
+    "21Landmarks_25views": {
+        "display_name": "21 landmarks",
+        "description": "Recommended full-face landmark model for standard BioFace3D workflows.",
+        "landmark_count": 21,
+        "recommended": True,
+    },
+    "20Landmarks_25views": {
+        "display_name": "20 landmarks",
+        "description": "Depth-only variant with 20 landmarks.",
+        "landmark_count": 20,
+        "recommended": False,
+    },
+    "20Landmarks_25v_depth_geom": {
+        "display_name": "20 landmarks (depth + geometry)",
+        "description": "20-landmark model that uses both geometry and depth renderings.",
+        "landmark_count": 20,
+        "recommended": False,
+    },
+    "LYHM_5Landmarks_25views": {
+        "display_name": "5 landmarks",
+        "description": "Lightweight LYHM model with 5 landmarks.",
+        "landmark_count": 5,
+        "recommended": False,
+    },
+}
+
+
+def _load_config_dict(model_dir):
+    config_path = Path(model_dir) / "config.json"
+    if not config_path.is_file():
+        raise FileNotFoundError(f"Config not found: {config_path}")
+    with config_path.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def get_cached_model_path(model_dir):
+    """Return the cache location for model weights."""
+    model_dir = Path(model_dir)
+    return _MODEL_CACHE_DIR / model_dir.name / "model_best.pth"
+
+
+def _validate_model_weights(model_path, require_zip=False):
+    """
+    Return (is_valid, error_message).
+
+    For modern PyTorch checkpoints saved as zip archives, opening the archive is
+    enough to catch common corruption cases such as truncated downloads.
+    """
+    model_path = Path(model_path)
+    if not model_path.is_file():
+        return False, "Model weights file does not exist."
+    if model_path.stat().st_size <= 0:
+        return False, "Model weights file is empty."
+
+    try:
+        with model_path.open("rb") as f:
+            signature = f.read(4)
+    except OSError as exc:
+        return False, f"Could not read model weights: {exc}"
+
+    # Modern torch.save checkpoints are zip archives. Validate the central directory.
+    if signature.startswith(b"PK"):
+        try:
+            with zipfile.ZipFile(str(model_path), "r") as archive:
+                names = archive.namelist()
+                if not names:
+                    return False, "Checkpoint archive is empty."
+        except (zipfile.BadZipFile, OSError) as exc:
+            return False, f"Checkpoint archive is invalid or truncated: {exc}"
+    elif require_zip:
+        return False, "Expected a zip-based PyTorch checkpoint."
+
+    return True, None
+
+
+def get_model_status(model_dir):
+    """Return metadata and availability information for a bundled BioFace3D model."""
+    model_dir = Path(model_dir)
+    config_dict = _load_config_dict(model_dir)
+    model_ref = ((config_dict.get("predict") or {}).get("model_pth_or_url") or "").strip()
+    bundled_path = model_dir / "model_best.pth"
+    cached_path = get_cached_model_path(model_dir)
+    candidate_path = Path(model_ref).expanduser() if model_ref else None
+    candidate_exists = bool(candidate_path and candidate_path.is_file())
+    metadata = dict(_MODEL_METADATA.get(model_dir.name, {}))
+    landmark_count = metadata.get("landmark_count")
+    if landmark_count is None:
+        landmark_count = (((config_dict.get("arch") or {}).get("args") or {}).get("n_landmarks"))
+    download_url = model_ref if model_ref.startswith(("http://", "https://")) else None
+
+    resolved_path = None
+    availability_source = None
+    if bundled_path.is_file():
+        resolved_path = bundled_path
+        availability_source = "bundled"
+    elif cached_path.is_file():
+        resolved_path = cached_path
+        availability_source = "cached"
+    elif candidate_exists:
+        resolved_path = candidate_path
+        availability_source = "local"
+
+    validation_error = None
+    is_available = resolved_path is not None
+    if resolved_path is not None:
+        is_valid, validation_error = _validate_model_weights(
+            resolved_path,
+            require_zip=(availability_source == "cached"),
+        )
+        if not is_valid:
+            is_available = False
+
+    return {
+        "name": model_dir.name,
+        "display_name": metadata.get("display_name", model_dir.name),
+        "description": metadata.get("description", ""),
+        "landmark_count": landmark_count,
+        "recommended": bool(metadata.get("recommended", False)),
+        "model_dir": model_dir,
+        "config_path": model_dir / "config.json",
+        "bundled_weights_path": bundled_path,
+        "cached_weights_path": cached_path,
+        "resolved_weights_path": resolved_path,
+        "is_available": is_available,
+        "availability_source": availability_source,
+        "download_url": download_url,
+        "validation_error": validation_error,
+    }
+
+
+def list_available_models(configs_dir=None):
+    """Enumerate bundled BioFace3D model configs with status information."""
+    configs_dir = Path(configs_dir) if configs_dir else _CONFIGS_DIR
+    models = []
+    if not configs_dir.is_dir():
+        return models
+    for model_dir in sorted(configs_dir.iterdir()):
+        if model_dir.is_dir() and (model_dir / "config.json").is_file():
+            models.append(get_model_status(model_dir))
+    return models
+
+
+def remove_cached_model(model_dir):
+    """Delete cached weights for a model. Bundled weights are never removed."""
+    cached_path = get_cached_model_path(model_dir)
+    if cached_path.is_file():
+        cached_path.unlink()
+        return True
+    return False
 
 
 def _ensure_model_weights(model_dir, config_dict):
-    """Resolve bundled weights or download them on demand from the configured URL."""
+    """Resolve already-available model weights, or raise if the model has not been downloaded yet."""
     model_path = model_dir / "model_best.pth"
     if model_path.is_file():
+        is_valid, validation_error = _validate_model_weights(model_path)
+        if not is_valid:
+            raise RuntimeError(
+                "Bundled model weights for {} are invalid: {}".format(model_dir.name, validation_error)
+            )
         return model_path
+
+    cached_path = get_cached_model_path(model_dir)
+    if cached_path.is_file():
+        is_valid, validation_error = _validate_model_weights(cached_path, require_zip=True)
+        if not is_valid:
+            raise RuntimeError(
+                "Cached model weights for {} are invalid: {}".format(model_dir.name, validation_error)
+            )
+        return cached_path
 
     model_ref = (config_dict.get("predict") or {}).get("model_pth_or_url")
     if not model_ref:
@@ -46,35 +212,92 @@ def _ensure_model_weights(model_dir, config_dict):
 
     candidate_path = Path(str(model_ref)).expanduser()
     if candidate_path.is_file():
+        is_valid, validation_error = _validate_model_weights(candidate_path)
+        if not is_valid:
+            raise RuntimeError(
+                "Model weights at {} are invalid: {}".format(candidate_path, validation_error)
+            )
         return candidate_path
 
     model_ref_str = str(model_ref)
     if model_ref_str.startswith(("http://", "https://")):
-        cache_path = _MODEL_CACHE_DIR / model_dir.name / "model_best.pth"
-        return _download_model_weights(model_ref_str, cache_path)
+        raise FileNotFoundError(
+            "Model weights for {} are not available locally. Download them first with download_model().".format(
+                model_dir.name
+            )
+        )
 
     raise FileNotFoundError(
         f"Model not found in {model_dir} and configured weights path/URL is unavailable: {model_ref_str}"
     )
 
 
-def _download_model_weights(url, destination):
+def download_model(model_dir, force=False):
+    """Download a model into the local cache and return the resolved weights path."""
+    model_dir = Path(model_dir)
+    status = get_model_status(model_dir)
+    if status["is_available"] and not force:
+        return status["resolved_weights_path"]
+    if status.get("validation_error") and status["availability_source"] in ("bundled", "local"):
+        raise RuntimeError(
+            "Existing model weights for {} are invalid: {}".format(model_dir.name, status["validation_error"])
+        )
+    if not status["download_url"]:
+        raise FileNotFoundError(f"No download URL configured for {model_dir.name}")
+    force = force or (status["availability_source"] == "cached" and bool(status.get("validation_error")))
+    return _download_model_weights(
+        status["download_url"],
+        status["cached_weights_path"],
+        force=force,
+    )
+
+
+def _download_model_weights(url, destination, force=False):
     """Download model weights once and reuse the cached file on later runs."""
-    if destination.is_file() and destination.stat().st_size > 0:
-        return destination
+    if destination.is_file() and destination.stat().st_size > 0 and not force:
+        is_valid, validation_error = _validate_model_weights(destination, require_zip=True)
+        if is_valid:
+            return destination
+        force = True
+        logging.warning("Discarding invalid cached model weights at %s: %s", destination, validation_error)
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     partial_path = destination.with_suffix(destination.suffix + ".part")
     logging.info("Downloading BioFace3D model weights from %s", url)
     try:
-        with urllib.request.urlopen(url) as response, partial_path.open("wb") as out:
-            shutil.copyfileobj(response, out)
+        curl_exe = shutil.which("curl.exe") or shutil.which("curl")
+        if not curl_exe:
+            raise RuntimeError(
+                "curl is required to download BioFace3D model weights on this system, but it was not found on PATH."
+            )
+        _download_with_curl(curl_exe, url, partial_path)
         partial_path.replace(destination)
+        is_valid, validation_error = _validate_model_weights(destination, require_zip=True)
+        if not is_valid:
+            try:
+                destination.unlink()
+            except OSError:
+                pass
+            raise RuntimeError(f"Downloaded checkpoint is invalid: {validation_error}")
         return destination
     except Exception as exc:
         if partial_path.exists():
             partial_path.unlink()
         raise RuntimeError(f"Could not download model weights from {url}: {exc}") from exc
+
+
+def _download_with_curl(curl_exe, url, destination):
+    """Download using curl when available; more reliable than urllib on some Windows setups."""
+    cmd = [curl_exe, "--fail", "--location", url, "--output", str(destination)]
+    kwargs = {"capture_output": True, "text": True}
+    if sys.platform == "win32":
+        kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    proc = subprocess.run(cmd, **kwargs)
+    if proc.returncode != 0:
+        details = (proc.stderr or proc.stdout or "").strip()
+        raise RuntimeError("curl download failed (exit code {}): {}".format(proc.returncode, details or "unknown error"))
+    if not destination.is_file() or destination.stat().st_size <= 0:
+        raise RuntimeError("curl download did not produce a valid file.")
 
 
 def predict_landmarks(
@@ -97,8 +320,8 @@ def predict_landmarks(
         Path to the input mesh file (.ply, .obj, .stl, .vtk, .wrl).
     model_dir : str or pathlib.Path
         Directory containing config.json and, optionally, bundled model_best.pth
-        (e.g. mvcnn/__configs/21Landmarks_25views). If weights are not bundled,
-        they are downloaded from predict.model_pth_or_url and cached locally.
+        (e.g. mvcnn/__configs/21Landmarks_25views). Weights must already be
+        available locally, either bundled, cached, or referenced by a local path.
     use_gpu : bool, optional
         Use GPU if available. Default True.
     predict_num : int, optional
@@ -128,11 +351,15 @@ def predict_landmarks(
         raise FileNotFoundError(f"Config not found: {config_path}")
 
     # Build config dict from JSON and resolve paths
-    with open(config_path, "r") as f:
+    with config_path.open("r", encoding="utf-8") as f:
         config_dict = json.load(f)
 
-    model_path = _ensure_model_weights(model_dir, config_dict)
-    config_dict["predict"] = {"model_pth_or_url": str(model_path.resolve())}
+    model_path = _ensure_model_weights(
+        model_dir,
+        config_dict,
+    )
+    config_dict.setdefault("predict", {})
+    config_dict["predict"]["model_pth_or_url"] = str(model_path.resolve())
     config_dict["n_gpu"] = 1 if use_gpu else 0
 
     # Create minimal config object for DeepMVLM (no argparse, no CLI)

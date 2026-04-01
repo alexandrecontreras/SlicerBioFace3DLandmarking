@@ -96,7 +96,8 @@ class AutomatedLandmarking(ScriptedLoadableModule):
         self.parent.helpText = (
             "This module runs automatic facial landmark detection on a 3D mesh using BioFace3D (Module 2). "
             "Select an input mesh (any format Slicer supports: PLY, OBJ, STL, etc.) and an output fiducial node, "
-            "then click Generate Landmarks. Model configs ship with the extension, and weights are downloaded automatically on first use if they are not present locally.\n\n"
+            "then click Generate Landmarks. Model configs ship with the extension, and model weights can be downloaded explicitly from the module when needed. "
+            "Downloaded weights are cached locally on this computer and reused on later runs.\n\n"
             "By default PyTorch is installed as CPU-only (smaller download). For much faster inference on an NVIDIA GPU, "
             "open the Advanced tab and use Install GPU-enabled PyTorch (large download; restart Slicer afterward)."
         )
@@ -172,6 +173,12 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
         self.ui.generateLandmarksButton.clicked.connect(self.onGenerateLandmarksButton_Clicked)
         self.ui.thisMeshOnlyRadio.toggled.connect(self._updateGenerateButtonState)
         self.ui.allMeshesRadio.toggled.connect(self._updateGenerateButtonState)
+        self.ui.modelSelector.currentIndexChanged.connect(self._refreshModelAvailabilityUI)
+        self.ui.modelSelector.currentIndexChanged.connect(self._updateGenerateButtonState)
+        self.ui.modelSelector.currentIndexChanged.connect(self._updateRunBatchButtonState)
+        self.ui.downloadSelectedModelButton.clicked.connect(self.onDownloadSelectedModelButtonClicked)
+        self.ui.refreshModelStatusButton.clicked.connect(self._refreshModelAvailabilityUI)
+        self.ui.removeCachedModelButton.clicked.connect(self.onRemoveCachedModelButtonClicked)
         self.ui.statusLabel.text = "Select input mesh and output landmarks node, then click Generate Landmarks."
 
         # 05b. Batch tab 
@@ -198,6 +205,7 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
         idx = self.ui.modelSelector.findText(default_model)
         if idx >= 0:
             self.ui.modelSelector.setCurrentIndex(idx)
+        self._refreshModelAvailabilityUI()
 
         # 06. Needed for programmer-friendly  Module-Reload
         if self.parent.isEntered:
@@ -297,6 +305,7 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
         print("\n**Widget.enter(self)")
         self.initializeParameterNode()
         self._updateTorchBackendGroup()
+        self._refreshModelAvailabilityUI()
 
     # ------------------------------------------------------------------------------------------------------------------
     def exit(self):
@@ -403,10 +412,18 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
         input_dir = (self.ui.batchInputDirEdit.currentPath or "").strip()
         output_dir = (self.ui.batchOutputDirEdit.currentPath or "").strip()
         ok = bool(input_dir and output_dir)
-        self.ui.runBatchButton.enabled = ok
+        model_status = self._get_selected_model_status()
         if not ok:
+            self.ui.runBatchButton.enabled = False
             self.ui.batchStatusLabel.text = "Select input and output directories, then click Run batch."
+        elif model_status and not model_status["is_available"] and model_status["download_url"]:
+            self.ui.runBatchButton.enabled = False
+            self.ui.batchStatusLabel.text = "Download the selected model above to enable batch prediction."
+        elif model_status and not model_status["is_available"]:
+            self.ui.runBatchButton.enabled = False
+            self.ui.batchStatusLabel.text = "Selected model is not available locally."
         else:
+            self.ui.runBatchButton.enabled = True
             self.ui.batchStatusLabel.text = "Click Run batch to process all meshes in the input folder."
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -414,6 +431,22 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
         """ Enable Generate Landmarks when valid: single mesh compatible, or (all meshes) at least one mesh in scene. """
         if self._parameterNode is None or self.logic is None:
             self.ui.generateLandmarksButton.enabled = False
+            return
+        model_status = self._get_selected_model_status()
+        if model_status and not model_status["is_available"] and model_status["download_url"]:
+            self.ui.generateLandmarksButton.toolTip = (
+                "Download the selected model to enable prediction."
+            )
+        elif model_status and not model_status["is_available"]:
+            self.ui.generateLandmarksButton.toolTip = "The selected model is not available locally."
+        else:
+            self.ui.generateLandmarksButton.toolTip = "Generate landmarks using the selected BioFace3D model."
+        if model_status and not model_status["is_available"]:
+            self.ui.generateLandmarksButton.enabled = False
+            if model_status["download_url"]:
+                self.ui.statusLabel.text = "Download the selected model to enable prediction."
+            else:
+                self.ui.statusLabel.text = "Selected model is not available locally."
             return
         allMeshes = self.ui.allMeshesRadio.isChecked()
         if allMeshes:
@@ -441,6 +474,13 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
         """ Update status label from output fiducial. """
         print("\t\t**Widget.onOutputFiducialModified(self)")
         if not self._observedFiducial:
+            model_status = self._get_selected_model_status()
+            if model_status and not model_status["is_available"]:
+                if model_status["download_url"]:
+                    self.ui.statusLabel.text = "Download the selected model to enable prediction."
+                else:
+                    self.ui.statusLabel.text = "Selected model is not available locally."
+                return
             if self._parameterNode and self._parameterNode.GetNodeReference("InputMesh"):
                 compatible, _ = self.logic.isMeshCompatibleForLandmarking(self._parameterNode.GetNodeReference("InputMesh"))
                 if compatible:
@@ -474,10 +514,179 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
         """ Max Tries from Advanced tab. """
         return self.ui.maxTriesSpinBox.value
 
+    def _get_selected_model_status(self):
+        """Return status dict for the currently selected model, or None on error."""
+        model_dir = self._get_model_dir_from_ui()
+        if not model_dir or not model_dir.is_dir():
+            return None
+        try:
+            from mvcnn.api import get_model_status
+            return get_model_status(model_dir)
+        except Exception as exc:
+            logging.warning("AutomatedLandmarking: could not inspect model status for %s: %s", model_dir, exc)
+            return None
+
+    def _refreshModelAvailabilityUI(self, *_args):
+        """Refresh inline model availability labels and action buttons."""
+        if not getattr(self, "ui", None):
+            return
+        status = self._get_selected_model_status()
+        if status is None:
+            self.ui.modelStatusLabel.text = "Status: Unavailable"
+            self.ui.downloadSelectedModelButton.enabled = False
+            self.ui.refreshModelStatusButton.enabled = False
+            self.ui.removeCachedModelButton.enabled = False
+            self.ui.modelSelector.toolTip = "Choose a valid bundled model configuration."
+            self.ui.modelStatusLabel.toolTip = self.ui.modelSelector.toolTip
+            self._updateGenerateButtonState()
+            self._updateRunBatchButtonState()
+            return
+
+        display_name = status["display_name"]
+        if status["recommended"]:
+            display_name += " (recommended)"
+
+        if status["is_available"]:
+            source_text = {
+                "bundled": "bundled with the extension",
+                "cached": "cached locally",
+                "local": "available from a local path",
+            }.get(status["availability_source"], "available locally")
+            self.ui.modelStatusLabel.text = "Status: Ready ({})".format(source_text)
+        elif status.get("validation_error"):
+            self.ui.modelStatusLabel.text = "Status: Cached model is invalid"
+        elif status["download_url"]:
+            self.ui.modelStatusLabel.text = "Status: Not downloaded"
+        else:
+            self.ui.modelStatusLabel.text = "Status: Unavailable locally"
+
+        detail_lines = ["Selected model: {}".format(display_name)]
+        if status["description"]:
+            detail_lines.append(status["description"])
+        if status["landmark_count"]:
+            detail_lines.append("Landmarks: {}".format(status["landmark_count"]))
+        if status.get("validation_error"):
+            detail_lines.append("Issue: {}".format(status["validation_error"]))
+        self.ui.modelSelector.toolTip = "\n".join(detail_lines)
+        self.ui.modelStatusLabel.toolTip = self.ui.modelSelector.toolTip
+
+        self.ui.downloadSelectedModelButton.enabled = (not status["is_available"]) and bool(status["download_url"])
+        self.ui.refreshModelStatusButton.enabled = True
+        self.ui.removeCachedModelButton.enabled = status["availability_source"] == "cached"
+        self._updateGenerateButtonState()
+        self._updateRunBatchButtonState()
+
+    def _download_model_for_status(self, status, show_success_message=True):
+        """Download the selected model with a visible progress dialog."""
+        if not status:
+            slicer.util.warningDisplay("Select a valid model first.")
+            return False
+        if status["is_available"]:
+            if show_success_message:
+                slicer.util.infoDisplay("The selected model is already available locally.")
+            self._refreshModelAvailabilityUI()
+            return True
+        if not status["download_url"]:
+            slicer.util.errorDisplay("This model has no download URL configured.")
+            return False
+
+        progress = slicer.util.createProgressDialog(
+            windowTitle="Downloading model...",
+            labelText=(
+                'Downloading "{}". This may take a while depending on the model size and your connection...'.format(
+                    status["display_name"]
+                )
+            ),
+            maximum=0,
+        )
+        progress.setMinimumDuration(0)
+        slicer.app.processEvents()
+
+        try:
+            from mvcnn.api import download_model
+            download_model(status["model_dir"])
+        except Exception as exc:
+            progress.close()
+            self._refreshModelAvailabilityUI()
+            slicer.util.errorDisplay("Model download failed:\n\n{}".format(exc))
+            return False
+
+        progress.close()
+        self._refreshModelAvailabilityUI()
+        if show_success_message:
+            slicer.util.infoDisplay(
+                'Model "{}" is ready and will be reused from local cache on future runs.'.format(status["display_name"])
+            )
+        return True
+
+    def onDownloadSelectedModelButtonClicked(self):
+        """Explicitly download the selected model before running inference."""
+        status = self._get_selected_model_status()
+        if status and status["is_available"]:
+            slicer.util.infoDisplay("The selected model is already ready to use.")
+            self._refreshModelAvailabilityUI()
+            return
+        if not status:
+            slicer.util.warningDisplay("Select a valid model first.")
+            return
+        prompt = (
+            'Download model "{}" now?\n\n'
+            "The weights will be stored in your local BioFace3D cache and reused for future predictions.".format(
+                status["display_name"]
+            )
+        )
+        if qt.QMessageBox.question(
+            slicer.util.mainWindow(),
+            "Download model",
+            prompt,
+            qt.QMessageBox.Yes | qt.QMessageBox.No,
+            qt.QMessageBox.Yes,
+        ) != qt.QMessageBox.Yes:
+            return
+        self._download_model_for_status(status, show_success_message=True)
+
+    def onRemoveCachedModelButtonClicked(self):
+        """Remove the selected model from the local cache."""
+        status = self._get_selected_model_status()
+        if not status:
+            slicer.util.warningDisplay("Select a valid model first.")
+            return
+        if status["availability_source"] != "cached":
+            slicer.util.infoDisplay("This model is not currently cached locally.")
+            self._refreshModelAvailabilityUI()
+            return
+        prompt = (
+            'Remove cached weights for "{}"?\n\n'
+            "This only deletes the local cache copy. You can download it again later.".format(status["display_name"])
+        )
+        if qt.QMessageBox.question(
+            slicer.util.mainWindow(),
+            "Remove cached model",
+            prompt,
+            qt.QMessageBox.Yes | qt.QMessageBox.No,
+            qt.QMessageBox.No,
+        ) != qt.QMessageBox.Yes:
+            return
+        try:
+            from mvcnn.api import remove_cached_model
+            removed = remove_cached_model(status["model_dir"])
+        except Exception as exc:
+            slicer.util.errorDisplay("Could not remove cached model:\n\n{}".format(exc))
+            return
+        self._refreshModelAvailabilityUI()
+        if removed:
+            slicer.util.infoDisplay("Cached model removed.")
+        else:
+            slicer.util.infoDisplay("No cached weights were found for the selected model.")
+
     # ------------------------------------------------------------------------------------------------------------------
     def onGenerateLandmarksButton_Clicked(self):
         """ Run landmark prediction and fill output fiducial(s). """
         print("**Widget.onGenerateLandmarksButton_Clicked(self)")
+        status = self._get_selected_model_status()
+        if not status or not status["is_available"]:
+            slicer.util.warningDisplay("Download the selected model before running prediction.")
+            return
         self.ui.generateLandmarksButton.enabled = False
         self.ui.statusLabel.text = "Running landmark prediction..."
         progressWidget = self.ui.progressWidget
@@ -545,6 +754,10 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
 
         output_format = self.ui.batchOutputFormatCombo.currentText or "txt"
         model_dir = self._get_model_dir_from_ui()
+        status = self._get_selected_model_status()
+        if not status or not status["is_available"]:
+            slicer.util.warningDisplay("Download the selected model before running batch prediction.")
+            return
 
         progressWidget = self.ui.batchProgressWidget
         progressBar = self.ui.batchProgressBar
@@ -795,7 +1008,11 @@ class AutomatedLandmarkingLogic(ScriptedLoadableModuleLogic):
                 progressCallback(idx + 1, total, "Processing %s" % mesh_path.name)
             try:
                 from mvcnn.api import predict_landmarks
-                landmarks = predict_landmarks(str(mesh_path), str(mdl_dir), use_gpu=True)
+                landmarks = predict_landmarks(
+                    str(mesh_path),
+                    str(mdl_dir),
+                    use_gpu=True,
+                )
             except Exception as e:
                 logging.warning("AutomatedLandmarking: predict_landmarks failed for %s: %s", mesh_path.name, e)
                 fail_count += 1

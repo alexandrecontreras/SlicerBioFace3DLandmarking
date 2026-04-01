@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+model_best.pth
+*.pth.part
