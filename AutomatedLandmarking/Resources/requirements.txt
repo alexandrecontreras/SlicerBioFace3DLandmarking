@@ -1,0 +1,10 @@
+# BioFace3D Automated Landmarking - Python dependencies
+# Install in Slicer's Python:  PythonSlicer -m pip install -r requirements.txt
+# (Usually numpy and vtk are bundled with Slicer; included here for completeness.)
+# Lower bound = oldest tested (2.6); upper bound guards against breaking changes.
+# Tested: 2.6.0 (Py3.9), 2.8.0 (Py3.9), 2.10.0 (Slicer Py3.12).
+
+numpy>=1.21.0
+vtk>=9.0.0
+torch>=2.6.0,<2.11
+scipy>=1.7.0

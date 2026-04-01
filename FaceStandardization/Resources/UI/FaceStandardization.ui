@@ -1,0 +1,449 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>FaceStandardization</class>
+ <widget class="qMRMLWidget" name="FaceStandardization">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>350</width>
+    <height>480</height>
+   </rect>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QTabWidget" name="mainTabWidget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="singleTab">
+      <attribute name="title">
+       <string>Single</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="singleTabLayout">
+       <item>
+        <widget class="ctkCollapsibleButton" name="referenceCollapsibleButton">
+         <property name="text">
+          <string>Reference (place landmarks 1-5)</string>
+         </property>
+         <property name="collapsed">
+          <bool>false</bool>
+         </property>
+         <layout class="QVBoxLayout" name="referenceLayout">
+          <item>
+           <widget class="QLabel" name="referenceImageLabel">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>200</height>
+             </size>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+            <property name="toolTip">
+             <string>1: outer right eye, 2: glabella, 3: outer left eye, 4: nose tip, 5: chin</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="ctkCollapsibleButton" name="inputsCollapsibleButton">
+         <property name="text">
+          <string>Inputs</string>
+         </property>
+         <layout class="QFormLayout" name="formLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="sourceMeshLabel">
+            <property name="text">
+             <string>Source mesh:</string>
+            </property>
+            <property name="toolTip">
+             <string>Mesh to align (will be modified in place). Place landmarks on this mesh.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="qMRMLNodeComboBox" name="sourceMeshSelector">
+            <property name="toolTip">
+             <string>Mesh to align. Place landmarks on source matching reference (1-5), then apply.</string>
+            </property>
+            <property name="nodeTypes">
+             <stringlist notr="true">
+              <string>vtkMRMLModelNode</string>
+             </stringlist>
+            </property>
+            <property name="showChildNodeTypes">
+             <bool>false</bool>
+            </property>
+            <property name="addEnabled">
+             <bool>false</bool>
+            </property>
+            <property name="removeEnabled">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="sourceLandmarksLabel">
+            <property name="text">
+             <string>Source landmarks:</string>
+            </property>
+            <property name="toolTip">
+             <string>Fiducials placed on source mesh. Order must match reference (1-5). Exactly 5 required.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="qMRMLNodeComboBox" name="sourceLandmarksSelector">
+            <property name="toolTip">
+             <string>Fiducials on source mesh. Use Create button then place in 3D view. Exactly 5 points.</string>
+            </property>
+            <property name="nodeTypes">
+             <stringlist notr="true">
+              <string>vtkMRMLMarkupsFiducialNode</string>
+             </stringlist>
+            </property>
+            <property name="showChildNodeTypes">
+             <bool>false</bool>
+            </property>
+            <property name="addEnabled">
+             <bool>false</bool>
+            </property>
+            <property name="removeEnabled">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="ctkCollapsibleButton" name="landmarkSetupCollapsibleButton">
+         <property name="text">
+          <string>Landmark setup</string>
+         </property>
+         <layout class="QVBoxLayout" name="landmarkSetupLayout">
+          <item>
+           <widget class="QPushButton" name="createSourceLandmarksButton">
+            <property name="toolTip">
+             <string>Create new fiducial node for source landmarks. Then place points in 3D view (Markups toolbar).</string>
+            </property>
+            <property name="text">
+             <string>Create Source Landmarks</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="ctkCollapsibleButton" name="applyToCollapsibleButton">
+         <property name="text">
+          <string>Apply to</string>
+         </property>
+         <property name="collapsed">
+          <bool>false</bool>
+         </property>
+         <layout class="QVBoxLayout" name="applyToLayout">
+          <item>
+           <widget class="QRadioButton" name="thisMeshOnlyRadio">
+            <property name="text">
+             <string>This mesh only</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+            <property name="toolTip">
+             <string>Standardize only the selected source mesh.</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="allMeshesRadio">
+            <property name="text">
+             <string>All meshes in scene (excluding source)</string>
+            </property>
+            <property name="toolTip">
+             <string>Apply the same transform to all meshes in the scene. Source mesh is the reference.</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="icpRefinementCheckBox">
+         <property name="text">
+          <string>ICP refinement (optional)</string>
+         </property>
+         <property name="checked">
+          <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Refine alignment with ICP after landmark transform. May worsen meshes with internal structures (e.g. MRI). Use only for clean surface meshes.</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="progressWidget" native="true">
+         <property name="visible">
+          <bool>false</bool>
+         </property>
+         <layout class="QHBoxLayout" name="progressLayout">
+          <item>
+           <widget class="QProgressBar" name="progressBar">
+            <property name="value">
+             <number>0</number>
+            </property>
+            <property name="textVisible">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="applyStandardizationButton">
+         <property name="toolTip">
+          <string>Compute similarity transform from landmarks and apply to mesh(es). Requires exactly 5 landmarks.</string>
+         </property>
+         <property name="text">
+          <string>Apply Standardization</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="hintLabel">
+         <property name="text">
+          <string>Place landmarks on source mesh (same order as reference 1-5), then Apply Standardization.</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="singleTabSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="batchTab">
+      <attribute name="title">
+       <string>Batch</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="batchTabLayout">
+       <item>
+        <widget class="QLabel" name="batchHintLabel">
+         <property name="text">
+          <string>Standardize meshes from directory using a reference .fcsv (5 landmarks, same order as canonical). ICP uses the bundled reference mesh.</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QFormLayout" name="batchFormLayout">
+         <item row="0" column="0">
+          <widget class="QLabel" name="batchInputDirLabel">
+           <property name="text">
+            <string>Input directory:</string>
+           </property>
+           <property name="toolTip">
+            <string>Directory containing mesh files (.ply, .obj, .vtk, .stl)</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="ctkPathLineEdit" name="batchInputDirEdit">
+           <property name="filters">
+            <string>Directory</string>
+           </property>
+           <property name="toolTip">
+            <string>Folder with meshes to standardize</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="batchRefLandmarksLabel">
+           <property name="text">
+            <string>Reference landmarks:</string>
+           </property>
+           <property name="toolTip">
+            <string>.fcsv with 5 landmarks (same order as canonical). Defines the similarity transform; mesh geometry is not read from disk.</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="ctkPathLineEdit" name="batchRefLandmarksEdit">
+           <property name="filters">
+            <string>Files</string>
+           </property>
+           <property name="toolTip">
+            <string>Path to .fcsv with 5 landmarks (same order as canonical)</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="batchOutputDirLabel">
+           <property name="text">
+            <string>Output directory:</string>
+           </property>
+           <property name="toolTip">
+            <string>Where standardized meshes will be saved</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="ctkPathLineEdit" name="batchOutputDirEdit">
+           <property name="filters">
+            <string>Directory</string>
+           </property>
+           <property name="toolTip">
+            <string>Output folder for standardized meshes</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="batchIcpRefinementCheckBox">
+         <property name="text">
+          <string>ICP refinement (optional)</string>
+         </property>
+         <property name="checked">
+          <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Refine alignment with ICP. May worsen meshes with internal structures.</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="batchProgressWidget" native="true">
+         <property name="visible">
+          <bool>false</bool>
+         </property>
+         <layout class="QHBoxLayout" name="batchProgressLayout">
+          <item>
+           <widget class="QProgressBar" name="batchProgressBar">
+            <property name="value">
+             <number>0</number>
+            </property>
+            <property name="textVisible">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="runBatchButton">
+         <property name="toolTip">
+          <string>Process all meshes in input directory. Load, standardize, save, unload each.</string>
+         </property>
+         <property name="text">
+          <string>Run batch</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="batchStatusLabel">
+         <property name="text">
+          <string>Select input and output directories and reference landmarks (.fcsv), then click Run batch.</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="batchTabSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>qMRMLNodeComboBox</class>
+   <extends>QWidget</extends>
+   <header>qMRMLNodeComboBox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>qMRMLWidget</class>
+   <extends>QWidget</extends>
+   <header>qMRMLWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ctkCollapsibleButton</class>
+   <extends>QWidget</extends>
+   <header>ctkCollapsibleButton.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ctkSliderWidget</class>
+   <extends>QWidget</extends>
+   <header>ctkSliderWidget.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>FaceStandardization</sender>
+   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
+   <receiver>sourceMeshSelector</receiver>
+   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+  </connection>
+  <connection>
+   <sender>FaceStandardization</sender>
+   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
+   <receiver>sourceLandmarksSelector</receiver>
+   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+  </connection>
+ </connections>
+</ui>

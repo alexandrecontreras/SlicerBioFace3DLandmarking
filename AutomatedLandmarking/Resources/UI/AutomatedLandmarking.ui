@@ -1,0 +1,492 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>AutomatedLandmarking</class>
+ <widget class="qMRMLWidget" name="AutomatedLandmarking">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>325</width>
+    <height>380</height>
+   </rect>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QTabWidget" name="mainTabWidget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="singleTab">
+      <attribute name="title">
+       <string>Single</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="singleTabLayout">
+       <item>
+        <widget class="QLabel" name="modelSelectorLabel">
+         <property name="text">
+          <string>Model:</string>
+         </property>
+         <property name="toolTip">
+          <string>BioFace3D landmark model. 21Landmarks_25views is the default for facial meshes.</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="modelSelector">
+         <property name="toolTip">
+          <string>Select the landmark model. More landmarks = more detail but slower.</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="inputModelLabel">
+         <property name="text">
+          <string>Input mesh:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="qMRMLNodeComboBox" name="inputModelSelector">
+         <property name="nodeTypes">
+          <stringlist notr="true">
+           <string>vtkMRMLModelNode</string>
+          </stringlist>
+         </property>
+         <property name="noneEnabled">
+          <bool>true</bool>
+         </property>
+         <property name="addEnabled">
+          <bool>true</bool>
+         </property>
+         <property name="removeEnabled">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="outputFiducialLabel">
+         <property name="text">
+          <string>Output landmarks:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="qMRMLNodeComboBox" name="outputFiducialSelector">
+         <property name="nodeTypes">
+          <stringlist notr="true">
+           <string>vtkMRMLMarkupsFiducialNode</string>
+          </stringlist>
+         </property>
+         <property name="noneEnabled">
+          <bool>true</bool>
+         </property>
+         <property name="addEnabled">
+          <bool>true</bool>
+         </property>
+         <property name="removeEnabled">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="applyToGroupBox">
+         <property name="title">
+          <string>Apply to</string>
+         </property>
+         <layout class="QVBoxLayout" name="applyToLayout">
+          <item>
+           <widget class="QRadioButton" name="thisMeshOnlyRadio">
+            <property name="text">
+             <string>This mesh only</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+            <property name="toolTip">
+             <string>Generate landmarks for the selected input mesh only.</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="allMeshesRadio">
+            <property name="text">
+             <string>All meshes in scene (same coordinate system)</string>
+            </property>
+            <property name="toolTip">
+             <string>Generate landmarks for all meshes in the scene. One output fiducial per mesh.</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="progressWidget" native="true">
+         <property name="visible">
+          <bool>false</bool>
+         </property>
+         <layout class="QHBoxLayout" name="progressLayout">
+          <item>
+           <widget class="QProgressBar" name="progressBar">
+            <property name="value">
+             <number>0</number>
+            </property>
+            <property name="textVisible">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="generateLandmarksButton">
+         <property name="text">
+          <string>Generate Landmarks</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="statusLabel">
+         <property name="text">
+          <string>Select input mesh and output landmarks node, then click Generate Landmarks.</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="singleTabSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="batchTab">
+      <attribute name="title">
+       <string>Batch</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="batchTabLayout">
+       <item>
+        <widget class="QLabel" name="batchInputDirLabel">
+         <property name="text">
+          <string>Input directory:</string>
+         </property>
+         <property name="toolTip">
+          <string>Folder containing mesh files (.ply, .obj, .stl, .vtk, .wrl)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="ctkPathLineEdit" name="batchInputDirEdit">
+         <property name="filters">
+          <string>Directory</string>
+         </property>
+         <property name="toolTip">
+          <string>Select folder with mesh files to process</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="batchOutputDirLabel">
+         <property name="text">
+          <string>Output directory:</string>
+         </property>
+         <property name="toolTip">
+          <string>Folder where landmark files will be saved</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="ctkPathLineEdit" name="batchOutputDirEdit">
+         <property name="filters">
+          <string>Directory</string>
+         </property>
+         <property name="toolTip">
+          <string>Select folder for output landmark files</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="batchOutputFormatLabel">
+         <property name="text">
+          <string>Output format:</string>
+         </property>
+         <property name="toolTip">
+          <string>File format for saved landmarks</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="batchOutputFormatCombo">
+         <property name="toolTip">
+          <string>txt: plain x y z per line; fcsv: Slicer fiducial; landmarkAscii: AmiraMesh; all: write all formats</string>
+         </property>
+         <item>
+          <property name="text">
+           <string>txt</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>fcsv</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>landmarkAscii</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>all</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="batchProgressWidget" native="true">
+         <property name="visible">
+          <bool>false</bool>
+         </property>
+         <layout class="QHBoxLayout" name="batchProgressLayout">
+          <item>
+           <widget class="QProgressBar" name="batchProgressBar">
+            <property name="value">
+             <number>0</number>
+            </property>
+            <property name="textVisible">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="runBatchButton">
+         <property name="text">
+          <string>Run batch</string>
+         </property>
+         <property name="toolTip">
+          <string>Process all mesh files in input directory and save landmarks to output directory</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="batchStatusLabel">
+         <property name="text">
+          <string>Select input and output directories, then click Run batch.</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="batchTabSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="advancedTab">
+      <attribute name="title">
+       <string>Advanced</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="advancedTabLayout">
+       <item>
+        <widget class="QGroupBox" name="pytorchGpuGroupBox">
+         <property name="title">
+          <string>PyTorch / GPU acceleration</string>
+         </property>
+         <layout class="QVBoxLayout" name="pytorchGpuLayout">
+          <item>
+           <widget class="QLabel" name="torchBackendStatusLabel">
+            <property name="text">
+             <string>PyTorch: checking...</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="installGpuTorchButton">
+            <property name="text">
+             <string>Install GPU-enabled PyTorch...</string>
+            </property>
+            <property name="toolTip">
+             <string>Reinstall PyTorch from the official CUDA wheel index (large download). Requires a recent NVIDIA GPU driver. Restart 3D Slicer after installation.</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <layout class="QFormLayout" name="advancedFormLayout">
+         <item row="0" column="0">
+          <widget class="QLabel" name="maxRansacLabel">
+           <property name="text">
+            <string>Max Ransac Error:</string>
+           </property>
+           <property name="toolTip">
+            <string>Prediction rejected if ransac_error &gt;= this. Lower = stricter. Default 5.</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QDoubleSpinBox" name="maxRansacSpinBox">
+           <property name="decimals">
+            <number>1</number>
+           </property>
+           <property name="minimum">
+            <double>0.5</double>
+           </property>
+           <property name="maximum">
+            <double>50.0</double>
+           </property>
+           <property name="singleStep">
+            <double>0.5</double>
+           </property>
+           <property name="value">
+            <double>5.0</double>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="meanPredictionsLabel">
+           <property name="text">
+            <string>Mean Predictions:</string>
+           </property>
+           <property name="toolTip">
+            <string>Number of runs to average. More = stabler but slower. Default 1.</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QSpinBox" name="meanPredictionsSpinBox">
+           <property name="minimum">
+            <number>1</number>
+           </property>
+           <property name="maximum">
+            <number>50</number>
+           </property>
+           <property name="value">
+            <number>1</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="maxTriesLabel">
+           <property name="text">
+            <string>Max Tries:</string>
+           </property>
+           <property name="toolTip">
+            <string>Retries per run when ransac exceeds threshold. Default 3.</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QSpinBox" name="maxTriesSpinBox">
+           <property name="minimum">
+            <number>1</number>
+           </property>
+           <property name="maximum">
+            <number>20</number>
+           </property>
+           <property name="value">
+            <number>3</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <spacer name="advancedTabSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>qMRMLNodeComboBox</class>
+   <extends>QWidget</extends>
+   <header>qMRMLNodeComboBox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>qMRMLWidget</class>
+   <extends>QWidget</extends>
+   <header>qMRMLWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ctkPathLineEdit</class>
+   <extends>QWidget</extends>
+   <header>ctkPathLineEdit.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>AutomatedLandmarking</sender>
+   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
+   <receiver>inputModelSelector</receiver>
+   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>162</x>
+     <y>155</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>162</x>
+     <y>26</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>AutomatedLandmarking</sender>
+   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
+   <receiver>outputFiducialSelector</receiver>
+   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>162</x>
+     <y>155</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>162</x>
+     <y>26</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
