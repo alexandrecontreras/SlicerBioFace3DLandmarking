@@ -1,6 +1,6 @@
 # BioFace3D Landmarking
 
-3D Slicer extension for automatic landmark prediction on 3D facial meshes, with an optional mesh-standardization step that aligns surfaces to the reference space expected by the BioFace3D models.
+3D Slicer extension for automatic landmark prediction on 3D facial meshes. Includes an optional mesh-standardization step that aligns surfaces to the reference space expected by the BioFace3D models.
 
 ![BioFace3D](assets/bioface3d_logo.png)
 
@@ -10,15 +10,15 @@ BioFace3D is an end-to-end open-source pipeline for the automated extraction of 
 
 This extension integrates the BioFace3D landmarking functionality directly into 3D Slicer, enabling facial landmarks to be predicted on surface meshes. It also includes a mesh standardization module that aligns surfaces to the reference space used during model training.
 
-## Face Mesh Standardization
+## Step 1: Face Mesh Standardization
 
-This module aligns a face mesh to the bundled reference using manually placed correspondences, applying a similarity transform (rotation, translation, and uniform scale) with optional ICP refinement so the mesh is closer to the reference space used by the landmarking models.
+This module aligns a face mesh to the bundled reference using manually placed correspondences. It applies a similarity transform (rotation, translation, and uniform scale) with optional ICP refinement so the mesh is closer to the reference space used by the landmarking models.
 
 - **Similarity registration:** Place five homologous seed points on the subject in the same order as reference landmarks 1-5. The module computes a `vtkLandmarkTransform` in similarity mode (rotation, translation, and uniform scale), with optional ICP refinement against the reference surface.
 - **Scene mode:** Standardize the selected model or every compatible model in the scene.
 - **Batch mode:** Process an input folder using a reference `.fcsv` and write the results to an output folder.
 
-## AI Facial Landmark Detection
+## Step 2: AI Facial Landmark Detection
 This module runs the BioFace3D MVCNN landmarking pipeline inside Slicer. It renders the surface from multiple views, predicts landmark heatmaps for each view, and then combines these predictions into a single set of 3D landmarks on the surface.
 
 - **Models:** The **Model** selector lists the subfolders under `mvcnn/__configs/`. Each configuration predicts a specific landmark set.
