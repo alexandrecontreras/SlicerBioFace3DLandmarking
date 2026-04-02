@@ -167,12 +167,7 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
         self.addObserver(slicer.mrmlScene, slicer.mrmlScene.StartCloseEvent, self.onSceneStartClose)
         self.addObserver(slicer.mrmlScene, slicer.mrmlScene.EndCloseEvent, self.onSceneEndClose)
 
-        # 05. BioFace3D_Landmarking. Connect Signal-Slot to ensure sync.
-        self.ui.inputModelSelector.currentNodeChanged.connect(self.updateParameterNodeFromGUI)
-        self.ui.outputFiducialSelector.currentNodeChanged.connect(self.updateParameterNodeFromGUI)
-        self.ui.generateLandmarksButton.clicked.connect(self.onGenerateLandmarksButton_Clicked)
-        self.ui.thisMeshOnlyRadio.toggled.connect(self._updateGenerateButtonState)
-        self.ui.allMeshesRadio.toggled.connect(self._updateGenerateButtonState)
+        # 05a. Model management
         self.ui.modelSelector.currentIndexChanged.connect(self._refreshModelAvailabilityUI)
         self.ui.modelSelector.currentIndexChanged.connect(self._updateGenerateButtonState)
         self.ui.modelSelector.currentIndexChanged.connect(self._updateRunBatchButtonState)
@@ -181,7 +176,14 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
         self.ui.removeCachedModelButton.clicked.connect(self.onRemoveCachedModelButtonClicked)
         self.ui.statusLabel.text = "Select input mesh and output landmarks node, then click Generate Landmarks."
 
-        # 05b. Batch tab 
+        # 05b. Single tab
+        self.ui.inputModelSelector.currentNodeChanged.connect(self.updateParameterNodeFromGUI)
+        self.ui.outputFiducialSelector.currentNodeChanged.connect(self.updateParameterNodeFromGUI)
+        self.ui.generateLandmarksButton.clicked.connect(self.onGenerateLandmarksButton_Clicked)
+        self.ui.thisMeshOnlyRadio.toggled.connect(self._updateGenerateButtonState)
+        self.ui.allMeshesRadio.toggled.connect(self._updateGenerateButtonState)
+
+        # 05c. Batch tab 
         self.ui.runBatchButton.clicked.connect(self.onRunBatchButton_Clicked)
         self.ui.batchInputDirEdit.filters = ctk.ctkPathLineEdit.Dirs
         self.ui.batchOutputDirEdit.filters = ctk.ctkPathLineEdit.Dirs
@@ -546,17 +548,29 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
         if status["recommended"]:
             display_name += " (recommended)"
 
+        wh = status.get("weights_size_human")
+        dh = status.get("download_size_human")
+
         if status["is_available"]:
             source_text = {
                 "bundled": "bundled with the extension",
                 "cached": "cached locally",
                 "local": "available from a local path",
             }.get(status["availability_source"], "available locally")
-            self.ui.modelStatusLabel.text = "Status: Ready ({})".format(source_text)
+            line = "Status: Ready ({})".format(source_text)
+            if wh:
+                line += " — Weights: {}".format(wh)
+            self.ui.modelStatusLabel.text = line
         elif status.get("validation_error"):
-            self.ui.modelStatusLabel.text = "Status: Cached model is invalid"
+            line = "Status: Cached model is invalid"
+            if wh:
+                line += " — Expected file: {}".format(wh)
+            self.ui.modelStatusLabel.text = line
         elif status["download_url"]:
-            self.ui.modelStatusLabel.text = "Status: Not downloaded"
+            line = "Status: Not downloaded"
+            if dh:
+                line += " — Approx. download: {}".format(dh)
+            self.ui.modelStatusLabel.text = line
         else:
             self.ui.modelStatusLabel.text = "Status: Unavailable locally"
 
@@ -565,6 +579,12 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
             detail_lines.append(status["description"])
         if status["landmark_count"]:
             detail_lines.append("Landmarks: {}".format(status["landmark_count"]))
+        if status["is_available"] and wh:
+            detail_lines.append("Weights file: {}".format(wh))
+        elif dh and not status["is_available"]:
+            detail_lines.append("Approx. download size: {}".format(dh))
+        elif wh:
+            detail_lines.append("Weights file: {}".format(wh))
         if status.get("validation_error"):
             detail_lines.append("Issue: {}".format(status["validation_error"]))
         self.ui.modelSelector.toolTip = "\n".join(detail_lines)

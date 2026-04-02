@@ -32,6 +32,15 @@ if str(_MVCNN_DIR) not in sys.path:
 
 _MODEL_CACHE_DIR = Path.home() / ".bioface3d_mvcnn" / "models"
 _CONFIGS_DIR = _MVCNN_DIR / "__configs"
+# Typical model_best.pth size on disk / download (binary MB, 1024^2 bytes). Update if weights change upstream
+_MODEL_WEIGHTS_SIZE_LABEL = {
+    "21Landmarks_25views": "276.4 MB",
+    "20Landmarks_25views": "276.3 MB",
+    "20Landmarks_25v_depth_geom": "276.4 MB",
+    "LYHM_5Landmarks_25views": "274.7 MB",
+    "DTU3D_63Landmarks_100views": "70.9 MB",
+}
+
 _MODEL_METADATA = {
     "21Landmarks_25views": {
         "display_name": "21 landmarks",
@@ -55,6 +64,12 @@ _MODEL_METADATA = {
         "display_name": "5 landmarks",
         "description": "Lightweight LYHM model with 5 landmarks.",
         "landmark_count": 5,
+        "recommended": False,
+    },
+    "DTU3D_63Landmarks_100views": {
+        "display_name": "DTU3D (depth)",
+        "description": "DTU Deep-MVLM depth model (weights from shapeml.compute.dtu.dk).",
+        "landmark_count": 73,
         "recommended": False,
     },
 }
@@ -93,7 +108,7 @@ def _validate_model_weights(model_path, require_zip=False):
     except OSError as exc:
         return False, f"Could not read model weights: {exc}"
 
-    # Modern torch.save checkpoints are zip archives. Validate the central directory.
+    # Modern torch.save checkpoints are zip archives. Validate the central directory
     if signature.startswith(b"PK"):
         try:
             with zipfile.ZipFile(str(model_path), "r") as archive:
@@ -145,6 +160,10 @@ def get_model_status(model_dir):
         if not is_valid:
             is_available = False
 
+    size_label = _MODEL_WEIGHTS_SIZE_LABEL.get(model_dir.name)
+    weights_size_human = size_label
+    download_size_human = size_label if (download_url and resolved_path is None) else None
+
     return {
         "name": model_dir.name,
         "display_name": metadata.get("display_name", model_dir.name),
@@ -160,6 +179,8 @@ def get_model_status(model_dir):
         "availability_source": availability_source,
         "download_url": download_url,
         "validation_error": validation_error,
+        "weights_size_human": weights_size_human,
+        "download_size_human": download_size_human,
     }
 
 
