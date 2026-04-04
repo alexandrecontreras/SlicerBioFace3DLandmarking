@@ -13,8 +13,8 @@ This extension integrates the landmarking functionality directly into 3D Slicer 
 
 ## Quick start
 
-1. Standardize your mesh (or meshes) using **Face Mesh Standardization**.
-2. Run **AI Facial Landmark Detection** on the standardized mesh (or meshes).
+1. Standardize your mesh (or meshes) using **Face standardization**.
+2. Run **Landmark generation** on the standardized mesh (or meshes).
 
 > When can I skip standardization?
 >
@@ -23,14 +23,14 @@ This extension integrates the landmarking functionality directly into 3D Slicer 
 <!-- Screenshot placeholders (replace/add files later) -->
 ![TODO: Workflow overview screenshot](Screenshots/TODO_workflow_overview.png)
 
-## Step 1: Face Mesh Standardization
+## Step 1: Face standardization
 This module aligns your face mesh(es) to the bundled reference using manually placed correspondences.
 It computes a similarity transform (rotation, translation, uniform scale) from **exactly 5 seed landmarks** and applies it to the mesh(es).
 Optionally, it can run ICP refinement to further align the surface.
 
 ### Single mesh (scene mode)
 
-1. Open **Face Mesh Standardization**.
+1. Open **Face standardization**.
 2. Select your **source mesh** (the mesh where you will place the 5 seed landmarks).
 3. Click **`Create Source Landmarks`**.
 4. Use the **reference guide image shown in the module UI** to place **exactly 5** landmarks on the source mesh in this order:
@@ -66,7 +66,7 @@ Batch mode computes **one** similarity transform from a reference `.fcsv` (5 lan
 
 ![TODO: Standardization batch tab UI](Screenshots/TODO_standardization_batch_ui.png)
 
-## Step 2: AI Facial Landmark Detection
+## Step 2: Landmark generation
 This module runs the BioFace3D MVCNN landmarking pipeline inside Slicer.
 It renders the surface from multiple views, predicts landmark heatmaps for each view, and combines these predictions into a single set of 3D landmarks on the mesh surface.
 
@@ -78,7 +78,7 @@ It renders the surface from multiple views, predicts landmark heatmaps for each 
 
 ### Single mesh (scene mode)
 
-1. Open **AI Facial Landmark Detection**.
+1. Open **Landmark generation**.
 2. (Important) Use the mesh(es) you standardized in **Step 1**.
 3. Select:
    - **Input mesh**
@@ -130,23 +130,23 @@ For NVIDIA GPU acceleration, the extension installs GPU-enabled PyTorch from the
 
 ## Troubleshooting (common issues)
 
-- **Model not available**: in **AI Facial Landmark Detection**, choose a model and click **`Download Model`** if the UI indicates it is not cached.
+- **Model not available**: in **Landmark generation**, choose a model and click **`Download Model`** if the UI indicates it is not cached.
 - **Import errors for `torch` / `scipy`**: the extension tries to install dependencies automatically, but restricted environments may require manual setup (the UI will show the underlying error).
 - **Slow performance**: enable GPU-enabled PyTorch in **Advanced settings** (NVIDIA only), then restart Slicer and confirm the status shows **Using GPU**.
 - **Landmarks look wrong / prediction fails**:
-  - Make sure you ran **Step 1 (Face Mesh Standardization)** on the same mesh(es) you are predicting on (single mesh, **All meshes in scene**, or batch).
+  - Make sure you ran **Step 1 (Face standardization)** on the same mesh(es) you are predicting on (single mesh, **All meshes in scene**, or batch).
   - Re-check the **5 seed landmark order** used for standardization (use the reference guide image in the module UI).
   - To sanity-check alignment, compare your standardized mesh to the **bundled reference** (it is loaded into the scene by the standardization module but hidden by default; you can show/hide it from the Data/Subject Hierarchy tree).
 
 ## Screenshots
 
-Face Mesh Standardization: before and after template alignment.
+Face standardization: before and after template alignment.
 
 | Before | After |
 |--------|-------|
 | ![Standardization before](Screenshots/standardization_before.png) | ![Standardization after](Screenshots/standardization_after.png) |
 
-AI Facial Landmark Detection: result after landmark prediction.
+Landmark generation: result after landmark prediction.
 
 ![Landmarking after prediction](Screenshots/landmarking_after.png)
 

@@ -25,12 +25,12 @@ class FaceStandardization(ScriptedLoadableModule):
 
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
-        self.parent.title = "Face Mesh Standardization"
+        self.parent.title = "Face standardization"
         self.parent.categories = ["BioFace3D"]
         self.parent.dependencies = []
         self.parent.contributors = ["Alex Contreras Urbita"]
         self.parent.helpText = """
-        Standardize facial meshes for AI landmark detection.
+        Face standardization aligns facial meshes for landmark generation (BioFace3D models).
 
         Single tab (scene-based):
         1. Select source mesh (the mesh you place landmarks on).
@@ -63,7 +63,7 @@ class FaceStandardizationWidget(ScriptedLoadableModuleWidget, VTKObservationMixi
 
     # ------------------------------------------------------------------------------------------------------------------
     def setup(self):
-        print("**Widget.setup(self), \tFace Mesh Standardization")
+        print("**Widget.setup(self), \tFace standardization")
 
         """    00. Called when the user opens the module the first time and the widget is initialized. """
         ScriptedLoadableModuleWidget.setup(self)

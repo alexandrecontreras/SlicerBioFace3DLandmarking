@@ -89,12 +89,12 @@ class AutomatedLandmarking(ScriptedLoadableModule):
 
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
-        self.parent.title = "AI Facial Landmark Detection"
+        self.parent.title = "Landmark generation"
         self.parent.categories = ["BioFace3D"]
         self.parent.dependencies = []
         self.parent.contributors = ["Alex Contreras Urbita"]
         self.parent.helpText = (
-            "This module runs automatic facial landmark detection on a 3D mesh using BioFace3D (Module 2). "
+            "Landmark generation runs automatic facial landmark detection on a 3D mesh using BioFace3D (Module 2). "
             "Select an input mesh (any format Slicer supports: PLY, OBJ, STL, etc.) and an output fiducial node, "
             "then click Generate Landmarks. Model configs ship with the extension, and model weights can be downloaded explicitly from the module when needed. "
             "Downloaded weights are cached locally on this computer and reused on later runs.\n\n"
