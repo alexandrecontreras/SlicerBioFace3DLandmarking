@@ -32,7 +32,7 @@ if str(_MVCNN_DIR) not in sys.path:
 
 _MODEL_CACHE_DIR = Path.home() / ".bioface3d_mvcnn" / "models"
 _CONFIGS_DIR = _MVCNN_DIR / "__configs"
-# Typical model_best.pth size on disk / download (binary MB, 1024^2 bytes). Update if weights change upstream
+
 _MODEL_WEIGHTS_SIZE_LABEL = {
     "21Landmarks_25views": "276.4 MB",
     "20Landmarks_25views": "276.3 MB",

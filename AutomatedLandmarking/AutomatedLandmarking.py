@@ -774,6 +774,9 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
 
         output_format = self.ui.batchOutputFormatCombo.currentText or "txt"
         model_dir = self._get_model_dir_from_ui()
+        max_ransac = self._get_max_ransac_from_ui()
+        predict_num = self._get_predict_num_from_ui()
+        predict_tries = self._get_predict_tries_from_ui()
         status = self._get_selected_model_status()
         if not status or not status["is_available"]:
             slicer.util.warningDisplay("Download the selected model before running batch prediction.")
@@ -802,6 +805,9 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
                     model_dir=model_dir,
                     output_format=output_format,
                     progressCallback=progressCallback,
+                    max_ransac_error=max_ransac,
+                    predict_num=predict_num,
+                    predict_tries=predict_tries,
                 )
                 batch_summary = "Batch complete: %d succeeded, %d failed." % (success, fail)
                 batchStatusLabel.text = batch_summary
@@ -994,10 +1000,14 @@ class AutomatedLandmarkingLogic(ScriptedLoadableModuleLogic):
         model_dir=None,
         output_format="txt",
         progressCallback=None,
+        max_ransac_error=5.0,
+        predict_num=1,
+        predict_tries=3,
     ):
         """
         Process all mesh files in input_dir, run landmark prediction, save to output_dir.
         output_format: 'txt', 'fcsv', 'landmarkAscii', or 'all'.
+        max_ransac_error, predict_num, predict_tries: same as runLandmarkPrediction (Advanced tab).
         Returns (success_count, fail_count).
         """
         input_dir = Path(input_dir)
@@ -1032,6 +1042,9 @@ class AutomatedLandmarkingLogic(ScriptedLoadableModuleLogic):
                     str(mesh_path),
                     str(mdl_dir),
                     use_gpu=True,
+                    predict_num=predict_num,
+                    max_ransac_error=max_ransac_error,
+                    predict_tries=predict_tries,
                 )
             except Exception as e:
                 logging.warning("AutomatedLandmarking: predict_landmarks failed for %s: %s", mesh_path.name, e)
