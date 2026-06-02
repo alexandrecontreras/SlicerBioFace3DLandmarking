@@ -747,6 +747,7 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
                     predict_num=predict_num,
                     predict_tries=predict_tries,
                 )
+                requested = len(meshList) if isinstance(meshList, list) else 1
                 if outputNodes:
                     outputNode = outputNodes[0] if isinstance(outputNodes, (list, tuple)) else outputNodes
                     wasModified = self._parameterNode.StartModify()
@@ -755,8 +756,24 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
                     n = len(outputNodes) if isinstance(outputNodes, (list, tuple)) else 1
                     pts = outputNode.GetNumberOfControlPoints()
                     self.ui.statusLabel.text = "Generated landmarks for {} mesh(es). Points: {}.".format(n, pts)
+                    if requested > n:
+                        msg = (
+                            "Landmarks generated for {} of {} mesh(es); {} failed.\n\n"
+                            "Some meshes may be out of reference space or the Max Ransac Error "
+                            "may be too strict (current: {:.1f}). Try the default 5.0."
+                        ).format(n, requested, requested - n, max_ransac)
+                        self.ui.statusLabel.text = "Partial result: {} succeeded, {} failed.".format(n, requested - n)
+                        slicer.util.warningDisplay(msg)
                 else:
                     self.ui.statusLabel.text = "Prediction failed or no landmarks returned."
+                    msg = (
+                        "No landmarks were generated.\n\n"
+                        "Possible causes:\n"
+                        "- Mesh is not in BioFace3D reference space (run Face standardization first)\n"
+                        "- Max Ransac Error is too strict (current: {:.1f}; default: 5.0)\n"
+                        "- Model/dependencies issue (see status panel)"
+                    ).format(max_ransac)
+                    slicer.util.warningDisplay(msg)
         finally:
             progressWidget.setVisible(False)
             progressBar.setValue(progressBar.maximum)
@@ -811,6 +828,12 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
                 )
                 batch_summary = "Batch complete: %d succeeded, %d failed." % (success, fail)
                 batchStatusLabel.text = batch_summary
+                if fail > 0:
+                    slicer.util.warningDisplay(
+                        "Batch complete with failures: {} succeeded, {} failed.\n\n"
+                        "If many files fail, verify standardization and consider increasing "
+                        "Max Ransac Error (current: {:.1f}; default: 5.0).".format(success, fail, max_ransac)
+                    )
         finally:
             progressWidget.setVisible(False)
             progressBar.setValue(progressBar.maximum)
