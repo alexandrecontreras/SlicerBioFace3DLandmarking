@@ -1,7 +1,7 @@
 """
 Convert landmark arrays to Slicer fiducial nodes.
 
-Slicer uses RAS for all scene data (meshes, fiducials...). BioFace3D's predict_landmarks
+Slicer uses RAS for all scene data (meshes, fiducials...). The bundled predict_landmarks API
 returns landmarks in the same coordinate system as the input mesh. When the mesh is
 exported as LPS (as our module does), landmarks are LPS and must be converted to
 RAS before adding to fiducials.

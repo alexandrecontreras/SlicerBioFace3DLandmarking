@@ -26,11 +26,11 @@ class FaceStandardization(ScriptedLoadableModule):
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
         self.parent.title = "Face standardization"
-        self.parent.categories = ["BioFace3D"]
+        self.parent.categories = ["3DeepFL"]
         self.parent.dependencies = []
         self.parent.contributors = ["Alex Contreras Urbita"]
         self.parent.helpText = """
-        Face standardization aligns facial meshes for landmark generation (BioFace3D models).
+        Face standardization aligns facial meshes to the BioFace3D reference space for landmark generation.
 
         Single tab (scene-based):
         1. Select source mesh (the mesh you place landmarks on).

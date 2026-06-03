@@ -1,5 +1,5 @@
 """
-Mesh export for BioFace3D prediction.
+Mesh export for 3DeepFL landmark prediction.
 
 Exports Slicer vtkMRMLModelNode to PLY for predict_landmarks (single mode).
 """

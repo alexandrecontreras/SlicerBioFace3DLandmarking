@@ -90,18 +90,18 @@ class AutomatedLandmarking(ScriptedLoadableModule):
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
         self.parent.title = "Landmark generation"
-        self.parent.categories = ["BioFace3D"]
+        self.parent.categories = ["3DeepFL"]
         self.parent.dependencies = []
         self.parent.contributors = ["Alex Contreras Urbita"]
         self.parent.helpText = (
-            "Landmark generation runs automatic facial landmark detection on a 3D mesh using BioFace3D (Module 2). "
+            "Landmark generation runs automatic facial landmark detection on a 3D mesh using bundled MVCNN models (BioFace3D-compatible reference space). "
             "Select an input mesh (any format Slicer supports: PLY, OBJ, STL, etc.) and an output fiducial node, "
             "then click Generate Landmarks. Model configs ship with the extension, and model weights can be downloaded explicitly from the module when needed. "
             "Downloaded weights are cached locally on this computer and reused on later runs.\n\n"
             "By default PyTorch is installed as CPU-only (smaller download). For much faster inference on an NVIDIA GPU, "
             "open the Advanced tab and use Install GPU-enabled PyTorch (large download; restart Slicer afterward)."
         )
-        self.parent.acknowledgementText = 'BioFace3D Slicer integration. \nPart of the BioFace3D_Landmarking extension.'
+        self.parent.acknowledgementText = '3DeepFL — 3D Deep Learning Facial Landmarking extension for 3D Slicer.'
 
         print("AutomatedLandmarking(ScriptedLoadableModule):    __init__(self, parent)")
 
@@ -124,12 +124,12 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
 
     # ------------------------------------------------------------------------------------------------------------------
     def setup(self):
-        print("**Widget.setup(self), \tBioFace3D_Landmarking")
+        print("**Widget.setup(self), \t3DeepFL")
 
         """    00. Called when the user opens the module the first time and the widget is initialized. """
         ScriptedLoadableModuleWidget.setup(self)
 
-        # 00. Install BioFace3D dependencies if missing via pip (torch, scipy).
+        # 00. Install 3DeepFL dependencies if missing via pip (torch, scipy).
         needInstall = False
         try:
             import torch  
@@ -139,7 +139,7 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
         if needInstall:
             progressDialog = slicer.util.createProgressDialog(
                 windowTitle="Installing...",
-                labelText="Installing BioFace3D dependencies (torch, scipy). This may take some time...",
+                labelText="Installing 3DeepFL dependencies (torch, scipy). This may take some time...",
                 maximum=0,
             )
             slicer.app.processEvents()
@@ -147,7 +147,7 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
                 slicer.util.pip_install([_TORCH_PIP_SPEC, _SCIPY_PIP_SPEC])
             except Exception as e:
                 slicer.util.infoDisplay(
-                    "Could not install BioFace3D dependencies. Please install manually:\n"
+                    "Could not install 3DeepFL dependencies. Please install manually:\n"
                     "  PythonSlicer -m pip install '{}' '{}'\n\n{}".format(_TORCH_PIP_SPEC, _SCIPY_PIP_SPEC, e)
                 )
             progressDialog.close()
@@ -336,7 +336,7 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
     # ------------------------------------------------------------------------------------------------------------------
     def initializeParameterNode(self):
         """    Ensure parameter node exists and observed. """
-        print("\t**Widget.initializeParameterNode(self), \t BioFace3D_Landmarking")
+        print("\t**Widget.initializeParameterNode(self), \t 3DeepFL")
         self.setParameterNode(self.logic.getParameterNode())
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -345,7 +345,7 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
         print("\t\t**Widget.setParameterNode(self, inputParameterNode)")
         if inputParameterNode:
             if not inputParameterNode.IsSingleton():
-                raise ValueError('BioFace3D_Landmarking Alert! \tinputParameterNode is not a singleton!')
+                raise ValueError('3DeepFL Alert! \tinputParameterNode is not a singleton!')
             self.logic.setDefaultParameters(inputParameterNode)
 
         # 01. Unobserve previously selected SingleTon ParameterNode
@@ -369,7 +369,7 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
         # I. Open-Brace: Prevent infinite loops
         self._updatingGUIFromParameterNode = True
 
-        print("**Widget.updateGUIFromParameterNode(self, caller=None, event=None), \tBioFace3D_Landmarking")
+        print("**Widget.updateGUIFromParameterNode(self, caller=None, event=None), \t3DeepFL")
 
         # II. Sync GUI from parameter node refs
         inputMesh = self._parameterNode.GetNodeReference("InputMesh")
@@ -399,7 +399,7 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
     # ------------------------------------------------------------------------------------------------------------------
     def updateParameterNodeFromGUI(self, caller=None, event=None):
         """ Save GUI selection into ParameterNode. """
-        print("**Widget.updateParameterNodeFromGUI(self, caller=None, event=None),     \t BioFace3D_Landmarking")
+        print("**Widget.updateParameterNodeFromGUI(self, caller=None, event=None),     \t 3DeepFL")
         if self._parameterNode is None or self._updatingGUIFromParameterNode:
             return
         wasModified = self._parameterNode.StartModify()
@@ -442,7 +442,7 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
         elif model_status and not model_status["is_available"]:
             self.ui.generateLandmarksButton.toolTip = "The selected model is not available locally."
         else:
-            self.ui.generateLandmarksButton.toolTip = "Generate landmarks using the selected BioFace3D model."
+            self.ui.generateLandmarksButton.toolTip = "Generate landmarks using the selected 3DeepFL model."
         if model_status and not model_status["is_available"]:
             self.ui.generateLandmarksButton.enabled = False
             if model_status["download_url"]:
@@ -651,7 +651,7 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
             return
         prompt = (
             'Download model "{}" now?\n\n'
-            "The weights will be stored in your local BioFace3D cache and reused for future predictions.".format(
+            "The weights will be stored in your local 3DeepFL model cache and reused for future predictions.".format(
                 status["display_name"]
             )
         )
@@ -855,7 +855,7 @@ class AutomatedLandmarkingLogic(ScriptedLoadableModuleLogic):
     # ------------------------------------------------------------------------------------------------------------------
     def setDefaultParameters(self, parameterNode):
         """    Initialize parameter node with defaults if empty.    """
-        print("\t\t\t**Logic.setDefaultParameters(self, parameterNode), \tBioFace3D_Landmarking")
+        print("\t\t\t**Logic.setDefaultParameters(self, parameterNode), \t3DeepFL")
         pass
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -886,7 +886,7 @@ class AutomatedLandmarkingLogic(ScriptedLoadableModuleLogic):
         predict_tries=3,
     ):
         """
-        Run BioFace3D landmark prediction on mesh(es).
+        Run 3DeepFL landmark prediction on mesh(es).
 
         Parameters
         ----------
@@ -967,7 +967,7 @@ class AutomatedLandmarkingLogic(ScriptedLoadableModuleLogic):
                         logging.warning("AutomatedLandmarking: missing dependency - %s", e)
                         if idx == 0:
                             slicer.util.infoDisplay(
-                                "BioFace3D import failed (torch/scipy may be missing or another dependency failed):\n\n"
+                                "3DeepFL import failed (torch/scipy may be missing or another dependency failed):\n\n"
                                 "{0}\n\n"
                                 "If torch/scipy are missing, install with:\n"
                                 "  PythonSlicer -m pip install '{1}' '{2}'\n\n"
@@ -1009,7 +1009,7 @@ class AutomatedLandmarkingLogic(ScriptedLoadableModuleLogic):
 
     # ------------------------------------------------------------------------------------------------------------------
     def _get_model_dir(self):
-        """ Resolve path to BioFace3D model config (21Landmarks_25views). Uses bundled Resources/mvcnn. """
+        """ Resolve path to 3DeepFL model config (21Landmarks_25views). Uses bundled Resources/mvcnn. """
         model_dir = _BUNDLED_RESOURCES / "mvcnn" / "__configs" / "21Landmarks_25views"
         if model_dir.is_dir():
             return model_dir

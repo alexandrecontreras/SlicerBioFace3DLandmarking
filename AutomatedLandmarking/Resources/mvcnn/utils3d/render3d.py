@@ -134,7 +134,7 @@ def visualise_mesh_and_landmarks(mesh_name, predicted_lm=None, expected_lm=None,
 
     ren_win.SetOffScreenRendering(off_screen)
     ren_win.Render()
-    ren_win.SetWindowName("BioFace3D")
+    ren_win.SetWindowName("3DeepFL")
     iren.Start()
 
     if out_file is not None:

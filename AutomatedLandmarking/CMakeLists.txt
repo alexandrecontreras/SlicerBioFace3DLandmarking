@@ -17,7 +17,7 @@ set(MODULE_PYTHON_RESOURCES
   Helpers/fiducial_creation.py
   )
 
-# Bundled mvcnn package (BioFace3D Module 2) - Python code + model configs
+# Bundled mvcnn package - Python code + model configs
 file(GLOB_RECURSE MVCNN_RESOURCE_FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/Resources/mvcnn/*"
 )

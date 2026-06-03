@@ -1,4 +1,4 @@
-# BioFace3D Automated Landmarking - Python dependencies
+# 3DeepFL Landmark generation - Python dependencies
 # Install in Slicer's Python:  PythonSlicer -m pip install -r requirements.txt
 # (Usually numpy and vtk are bundled with Slicer; included here for completeness.)
 # Lower bound = oldest tested (2.6); upper bound guards against breaking changes.

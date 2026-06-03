@@ -1,5 +1,5 @@
 """
-BioFace3D Module 2 – Public Python API for direct integration (e.g. 3D Slicer).
+3DeepFL / MVCNN – Public Python API for direct integration (e.g. 3D Slicer).
 
 This module exposes a small Python API for model management and landmark prediction.
 No CLI, subprocess, or file-based flow is required. Import and call from Python only.
@@ -30,7 +30,7 @@ _MVCNN_DIR = Path(__file__).resolve().parent
 if str(_MVCNN_DIR) not in sys.path:
     sys.path.insert(0, str(_MVCNN_DIR))
 
-_MODEL_CACHE_DIR = Path.home() / ".bioface3d_mvcnn" / "models"
+_MODEL_CACHE_DIR = Path.home() / ".3deepfl_mvcnn" / "models"
 _CONFIGS_DIR = _MVCNN_DIR / "__configs"
 
 _MODEL_WEIGHTS_SIZE_LABEL = {
@@ -44,7 +44,7 @@ _MODEL_WEIGHTS_SIZE_LABEL = {
 _MODEL_METADATA = {
     "21Landmarks_25views": {
         "display_name": "21 landmarks",
-        "description": "Recommended full-face landmark model for standard BioFace3D workflows.",
+        "description": "Recommended full-face landmark model for standard 3DeepFL workflows.",
         "landmark_count": 21,
         "recommended": True,
     },
@@ -124,7 +124,7 @@ def _validate_model_weights(model_path, require_zip=False):
 
 
 def get_model_status(model_dir):
-    """Return metadata and availability information for a bundled BioFace3D model."""
+    """Return metadata and availability information for a bundled MVCNN model."""
     model_dir = Path(model_dir)
     config_dict = _load_config_dict(model_dir)
     model_ref = ((config_dict.get("predict") or {}).get("model_pth_or_url") or "").strip()
@@ -185,7 +185,7 @@ def get_model_status(model_dir):
 
 
 def list_available_models(configs_dir=None):
-    """Enumerate bundled BioFace3D model configs with status information."""
+    """Enumerate bundled MVCNN model configs with status information."""
     configs_dir = Path(configs_dir) if configs_dir else _CONFIGS_DIR
     models = []
     if not configs_dir.is_dir():
@@ -284,12 +284,12 @@ def _download_model_weights(url, destination, force=False):
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     partial_path = destination.with_suffix(destination.suffix + ".part")
-    logging.info("Downloading BioFace3D model weights from %s", url)
+    logging.info("Downloading 3DeepFL model weights from %s", url)
     try:
         curl_exe = shutil.which("curl.exe") or shutil.which("curl")
         if not curl_exe:
             raise RuntimeError(
-                "curl is required to download BioFace3D model weights on this system, but it was not found on PATH."
+                "curl is required to download 3DeepFL model weights on this system, but it was not found on PATH."
             )
         _download_with_curl(curl_exe, url, partial_path)
         partial_path.replace(destination)
@@ -434,7 +434,7 @@ class _MinimalConfig:
         self._output_path = output_path
         self._ngpu = 1 if use_gpu else 0
 
-        tmp = Path(tempfile.gettempdir()) / "bioface3d_mvcnn"
+        tmp = Path(tempfile.gettempdir()) / "3deepfl_mvcnn"
         self._temp_dir = tmp / "temp"
         self._save_dir = tmp / "saved"
         self._log_dir = tmp / "log"
