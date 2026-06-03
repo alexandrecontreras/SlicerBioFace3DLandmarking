@@ -545,8 +545,6 @@ class AutomatedLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMix
             return
 
         display_name = status["display_name"]
-        if status["recommended"]:
-            display_name += " (recommended)"
 
         wh = status.get("weights_size_human")
         dh = status.get("download_size_human")

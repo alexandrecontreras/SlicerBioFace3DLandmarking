@@ -10,6 +10,13 @@ from utils import append_to_file
 from utils3d import *
 
 
+def _checkpoint_to_state_dict(checkpoint):
+    """Full checkpoint vs Deep-MVLM only_state_dict export."""
+    if isinstance(checkpoint, dict) and "state_dict" in checkpoint:
+        return checkpoint["state_dict"]
+    return checkpoint
+
+
 class DeepMVLM:
     def __init__(self, config):
 
@@ -75,12 +82,7 @@ class DeepMVLM:
         # clean_file = 'saved/trained/' + base_name + '_only_state_dict.pth'
         # torch.save(checkpoint['state_dict'], clean_file)
 
-        state_dict = []
-        # Hack until all dicts are transformed
-        if check_point_name.find('only_state_dict') == -1:
-            state_dict = checkpoint['state_dict']
-        else:
-            state_dict = checkpoint
+        state_dict = _checkpoint_to_state_dict(checkpoint)
 
         if len(device_ids) > 1:
             model = torch.nn.DataParallel(model, device_ids=device_ids)
@@ -108,12 +110,7 @@ class DeepMVLM:
         logger.info('Loading checkpoint: {}'.format(check_point_name))
         checkpoint = torch.load(check_point_name, map_location=device, weights_only=False)
 
-        state_dict = []
-        # Hack until all dicts are transformed
-        if check_point_name.find('only_state_dict') == -1:
-            state_dict = checkpoint['state_dict']
-        else:
-            state_dict = checkpoint
+        state_dict = _checkpoint_to_state_dict(checkpoint)
 
         if len(device_ids) > 1:
             model = torch.nn.DataParallel(model, device_ids=device_ids)

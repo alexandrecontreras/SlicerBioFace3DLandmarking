@@ -38,7 +38,8 @@ _MODEL_WEIGHTS_SIZE_LABEL = {
     "20Landmarks_25views": "276.3 MB",
     "20Landmarks_25v_depth_geom": "276.4 MB",
     "LYHM_5Landmarks_25views": "274.7 MB",
-    "DTU3D_63Landmarks_100views": "70.9 MB",
+    "DTU3D_73Landmarks_96views_geom_depth": "70.9 MB",
+    "BU_3DFE_84Landmarks_96views_geom_depth": "71.3 MB",
 }
 
 _MODEL_METADATA = {
@@ -46,31 +47,31 @@ _MODEL_METADATA = {
         "display_name": "21 landmarks",
         "description": "Recommended full-face landmark model for standard 3DeepFL workflows.",
         "landmark_count": 21,
-        "recommended": True,
     },
     "20Landmarks_25views": {
         "display_name": "20 landmarks",
         "description": "Depth-only variant with 20 landmarks.",
         "landmark_count": 20,
-        "recommended": False,
     },
     "20Landmarks_25v_depth_geom": {
         "display_name": "20 landmarks (depth + geometry)",
         "description": "20-landmark model that uses both geometry and depth renderings.",
         "landmark_count": 20,
-        "recommended": False,
     },
     "LYHM_5Landmarks_25views": {
         "display_name": "5 landmarks",
         "description": "Lightweight LYHM model with 5 landmarks.",
         "landmark_count": 5,
-        "recommended": False,
     },
-    "DTU3D_63Landmarks_100views": {
-        "display_name": "DTU3D (depth)",
-        "description": "DTU Deep-MVLM depth model (weights from shapeml.compute.dtu.dk).",
+    "DTU3D_73Landmarks_96views_geom_depth": {
+        "display_name": "DTU3D 73 lm (geometry+depth)",
+        "description": "Deep-MVLM DTU3D landmark set; official geometry+depth config, 96 views.",
         "landmark_count": 73,
-        "recommended": False,
+    },
+    "BU_3DFE_84Landmarks_96views_geom_depth": {
+        "display_name": "BU-3DFE 84 lm (geometry+depth)",
+        "description": "Deep-MVLM BU-3DFE landmark set; official geometry+depth config, 96 views.",
+        "landmark_count": 84,
     },
 }
 
@@ -95,6 +96,7 @@ def _validate_model_weights(model_path, require_zip=False):
 
     For modern PyTorch checkpoints saved as zip archives, opening the archive is
     enough to catch common corruption cases such as truncated downloads.
+    Does not torch.load (inference loads weights in deepmvlm with its own pathlib patch).
     """
     model_path = Path(model_path)
     if not model_path.is_file():
@@ -108,7 +110,6 @@ def _validate_model_weights(model_path, require_zip=False):
     except OSError as exc:
         return False, f"Could not read model weights: {exc}"
 
-    # Modern torch.save checkpoints are zip archives. Validate the central directory
     if signature.startswith(b"PK"):
         try:
             with zipfile.ZipFile(str(model_path), "r") as archive:
@@ -121,6 +122,15 @@ def _validate_model_weights(model_path, require_zip=False):
         return False, "Expected a zip-based PyTorch checkpoint."
 
     return True, None
+
+
+def _weights_require_zip(model_path):
+    """BioFace3D caches are zip archives; DTU Deep-MVLM weights are legacy pickle files."""
+    try:
+        with Path(model_path).open("rb") as f:
+            return f.read(4).startswith(b"PK")
+    except OSError:
+        return False
 
 
 def get_model_status(model_dir):
@@ -155,7 +165,7 @@ def get_model_status(model_dir):
     if resolved_path is not None:
         is_valid, validation_error = _validate_model_weights(
             resolved_path,
-            require_zip=(availability_source == "cached"),
+            require_zip=_weights_require_zip(resolved_path),
         )
         if not is_valid:
             is_available = False
@@ -169,7 +179,6 @@ def get_model_status(model_dir):
         "display_name": metadata.get("display_name", model_dir.name),
         "description": metadata.get("description", ""),
         "landmark_count": landmark_count,
-        "recommended": bool(metadata.get("recommended", False)),
         "model_dir": model_dir,
         "config_path": model_dir / "config.json",
         "bundled_weights_path": bundled_path,
@@ -218,7 +227,9 @@ def _ensure_model_weights(model_dir, config_dict):
 
     cached_path = get_cached_model_path(model_dir)
     if cached_path.is_file():
-        is_valid, validation_error = _validate_model_weights(cached_path, require_zip=True)
+        is_valid, validation_error = _validate_model_weights(
+            cached_path, require_zip=_weights_require_zip(cached_path)
+        )
         if not is_valid:
             raise RuntimeError(
                 "Cached model weights for {} are invalid: {}".format(model_dir.name, validation_error)
@@ -276,7 +287,9 @@ def download_model(model_dir, force=False):
 def _download_model_weights(url, destination, force=False):
     """Download model weights once and reuse the cached file on later runs."""
     if destination.is_file() and destination.stat().st_size > 0 and not force:
-        is_valid, validation_error = _validate_model_weights(destination, require_zip=True)
+        is_valid, validation_error = _validate_model_weights(
+            destination, require_zip=_weights_require_zip(destination)
+        )
         if is_valid:
             return destination
         force = True
@@ -293,7 +306,9 @@ def _download_model_weights(url, destination, force=False):
             )
         _download_with_curl(curl_exe, url, partial_path)
         partial_path.replace(destination)
-        is_valid, validation_error = _validate_model_weights(destination, require_zip=True)
+        is_valid, validation_error = _validate_model_weights(
+            destination, require_zip=_weights_require_zip(destination)
+        )
         if not is_valid:
             try:
                 destination.unlink()
