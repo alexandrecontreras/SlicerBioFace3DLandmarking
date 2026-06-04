@@ -19,7 +19,9 @@ def create_fiducial_node():
     """Create a new fiducial node with default display settings. Returns vtkMRMLMarkupsFiducialNode."""
     node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode")
     node.SetName(slicer.mrmlScene.GenerateUniqueName("Landmarks"))
-    node.GetDisplayNode().SetSelectedColor(0, 1, 0)
+    display = node.GetDisplayNode()
+    display.SetSelectedColor(0, 1, 0)
+    display.SetPointLabelsVisibility(False)
     node.SetLocked(False)
     return node
 
@@ -70,13 +72,19 @@ def landmarks_to_fiducial(landmarks, fiducial_node=None, labels=None, coordinate
         fiducial_node.RemoveAllControlPoints()
 
     for i in range(n):
-        label = (labels[i] if labels else "lm_{}".format(i + 1))
-        fiducial_node.AddControlPoint(
-            float(landmarks[i, 0]),
-            float(landmarks[i, 1]),
-            float(landmarks[i, 2]),
-            label,
+        idx = fiducial_node.AddControlPoint(
+            [
+                float(landmarks[i, 0]),
+                float(landmarks[i, 1]),
+                float(landmarks[i, 2]),
+            ]
         )
+        if labels is not None:
+            fiducial_node.SetNthControlPointLabel(idx, labels[i])
+
+    display = fiducial_node.GetDisplayNode()
+    if display is not None:
+        display.SetPointLabelsVisibility(labels is not None)
 
     logging.info("landmarks_to_fiducial: added %d points to %s", n, fiducial_node.GetName())
     return fiducial_node
