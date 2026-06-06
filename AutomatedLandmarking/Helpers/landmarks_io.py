@@ -3,6 +3,8 @@ Save landmark arrays to file formats (txt, fcsv, landmarkAscii).
 Landmarks are (N, 3) numpy arrays, typically in LPS.
 """
 
+from pathlib import Path
+
 import numpy as np
 
 
@@ -26,8 +28,7 @@ def write_landmarks_fcsv(landmarks, path):
     ]
     for i in range(len(lm)):
         x, y, z = lm[i, 0], lm[i, 1], lm[i, 2]
-        label = "F-%d" % (i + 1)
-        lines.append("%d,%.3f,%.3f,%.3f,0,0,0,1,1,1,0,%s,[],[]\n" % (i + 1, x, y, z, label))
+        lines.append("%d,%.3f,%.3f,%.3f,0,0,0,1,1,1,0,,[],[]\n" % (i + 1, x, y, z))
     with open(path, "w") as f:
         f.writelines(lines)
 

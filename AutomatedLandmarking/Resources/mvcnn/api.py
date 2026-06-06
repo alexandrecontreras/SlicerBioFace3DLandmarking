@@ -39,7 +39,9 @@ _MODEL_WEIGHTS_SIZE_LABEL = {
     "20Landmarks_25v_depth_geom": "276.4 MB",
     "LYHM_5Landmarks_25views": "274.7 MB",
     "DTU3D_73Landmarks_96views_geom_depth": "70.9 MB",
+    "DTU3D_73Landmarks_96views_depth": "70.9 MB",
     "BU_3DFE_84Landmarks_96views_geom_depth": "71.3 MB",
+    "BU_3DFE_84Landmarks_96views_depth": "71.3 MB",
 }
 
 _MODEL_METADATA = {
@@ -65,12 +67,22 @@ _MODEL_METADATA = {
     },
     "DTU3D_73Landmarks_96views_geom_depth": {
         "display_name": "DTU3D 73 lm (geometry+depth)",
-        "description": "Deep-MVLM DTU3D landmark set; official geometry+depth config, 96 views.",
+        "description": "Deep-MVLM DTU3D; geometry+depth, 96 views. Best on smooth surfaces.",
+        "landmark_count": 73,
+    },
+    "DTU3D_73Landmarks_96views_depth": {
+        "display_name": "DTU3D 73 lm (depth)",
+        "description": "Deep-MVLM DTU3D depth-only, 96 views. Try on rough meshes if geometry+depth fails.",
         "landmark_count": 73,
     },
     "BU_3DFE_84Landmarks_96views_geom_depth": {
         "display_name": "BU-3DFE 84 lm (geometry+depth)",
-        "description": "Deep-MVLM BU-3DFE landmark set; official geometry+depth config, 96 views.",
+        "description": "Deep-MVLM BU-3DFE; geometry+depth, 96 views. Best on smooth surfaces.",
+        "landmark_count": 84,
+    },
+    "BU_3DFE_84Landmarks_96views_depth": {
+        "display_name": "BU-3DFE 84 lm (depth)",
+        "description": "Deep-MVLM BU-3DFE depth-only, 96 views. Try on rough meshes if geometry+depth fails.",
         "landmark_count": 84,
     },
 }

@@ -136,8 +136,12 @@ class FaceStandardizationWidget(ScriptedLoadableModuleWidget, VTKObservationMixi
             pixmap = qt.QPixmap(str(imgPath))
             if pixmap.isNull():
                 return
-            self.ui.referenceImageLabel.setPixmap(pixmap)
-            self.ui.referenceImageLabel.setScaledContents(True)
+            target_height = 380
+            if pixmap.height() > target_height:
+                pixmap = pixmap.scaledToHeight(target_height, qt.Qt.SmoothTransformation)
+            label = self.ui.referenceImageLabel
+            label.setPixmap(pixmap)
+            label.setScaledContents(False)
         except Exception as e:
             logging.warning("FaceStandardization: could not load reference image: %s", e)
 
