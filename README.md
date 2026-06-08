@@ -150,7 +150,7 @@ Landmark generation: result after landmark prediction.
 
 ## Citation
 
-If you use the underlying **BioFace3D** methods, models, or reference space in research, please cite:
+If you use the underlying **BioFace3D** methods or models in research, please cite:
 
 > Heredia-Lidón Á, Echeverry-Quiceno LM, González A, Hostalet N, Pomarol-Clotet E, Fortea J, Fatjó-Vilas M, Martínez-Abadías N, Sevillano X; Alzheimer’s Disease Neuroimaging Initiative. BioFace3D: An end-to-end open-source software for automated extraction of potential 3D facial biomarkers from MRI scans. Comput Methods Programs Biomed. 2025 Nov;271:109010. doi: 10.1016/j.cmpb.2025.109010. Epub 2025 Aug 9. PMID: 40818363.
 
